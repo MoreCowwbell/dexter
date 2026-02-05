@@ -24,25 +24,27 @@ import type {
   NewsParams,
 } from './types.js';
 import { getCache } from './cache.js';
+import { PolygonProvider } from './polygon.js';
 import { YfinanceProvider } from './yfinance.js';
 import { SecEdgarProvider } from './sec-edgar.js';
 import { FinnhubProvider } from './finnhub.js';
 import { FinancialDatasetsProvider } from './financial-datasets.js';
 
 // Provider priority order for each data type
+// Polygon first for price data (paid, most reliable), then free providers, then FinancialDatasets fallback
 const DATA_TYPE_PROVIDERS: Record<DataType, string[]> = {
-  priceSnapshot: ['yfinance', 'finnhub', 'financial-datasets'],
-  priceHistory: ['yfinance', 'finnhub', 'financial-datasets'],
-  incomeStatements: ['sec-edgar', 'yfinance', 'financial-datasets'],
-  balanceSheets: ['sec-edgar', 'yfinance', 'financial-datasets'],
-  cashFlowStatements: ['sec-edgar', 'yfinance', 'financial-datasets'],
-  keyRatios: ['yfinance', 'finnhub', 'financial-datasets'],
-  keyRatiosSnapshot: ['yfinance', 'finnhub', 'financial-datasets'],
+  priceSnapshot: ['polygon', 'yfinance', 'finnhub', 'financial-datasets'],
+  priceHistory: ['polygon', 'yfinance', 'finnhub', 'financial-datasets'],
+  incomeStatements: ['polygon', 'sec-edgar', 'yfinance', 'financial-datasets'],
+  balanceSheets: ['polygon', 'sec-edgar', 'yfinance', 'financial-datasets'],
+  cashFlowStatements: ['polygon', 'sec-edgar', 'yfinance', 'financial-datasets'],
+  keyRatios: ['polygon', 'yfinance', 'finnhub', 'financial-datasets'],
+  keyRatiosSnapshot: ['polygon', 'yfinance', 'finnhub', 'financial-datasets'],
   filings: ['sec-edgar', 'financial-datasets'],
   filingContent: ['sec-edgar', 'financial-datasets'],
-  companyInfo: ['yfinance', 'finnhub', 'sec-edgar', 'financial-datasets'],
+  companyInfo: ['polygon', 'yfinance', 'finnhub', 'sec-edgar', 'financial-datasets'],
   insiderTrades: ['finnhub', 'financial-datasets'],
-  news: ['finnhub', 'yfinance', 'financial-datasets'],
+  news: ['polygon', 'finnhub', 'yfinance', 'financial-datasets'],
   analystEstimates: ['financial-datasets'],
   segmentedRevenues: ['financial-datasets'],
 };
@@ -69,8 +71,9 @@ export class FinancialDataRouter {
   }
 
   private initializeProviders(): void {
-    // Initialize all providers
+    // Initialize all providers (order matters for display, not priority)
     const allProviders: FinancialDataProvider[] = [
+      new PolygonProvider(),
       new YfinanceProvider(),
       new SecEdgarProvider(),
       new FinnhubProvider(),
